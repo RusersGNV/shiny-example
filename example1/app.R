@@ -27,9 +27,7 @@ ui <- fluidPage(
                          choices = list("Salinity (ppt)" = "Salinity",
                                         "Conductivity (mS/cm)"= "Conductivity",
                                         "Temperature (C)" = "Temperature"),
-                         selected = c("Salinity", "Temperature")),
-      downloadButton("downloadData", "Download CSV"),
-      downloadButton("downloadPlot", "Download Plot")
+                         selected = c("Salinity", "Temperature"))
     ),
     
     mainPanel(
@@ -43,7 +41,7 @@ ui <- fluidPage(
 
 server <- shinyServer(function(input, output) {
   
-  datInput <- reactive({
+  output$table <- renderDataTable({
     dat <- dat %>% 
       filter(Site == input$site,
              Date >= input$date[1] & Date <= input$date[2]) %>% 
@@ -51,7 +49,7 @@ server <- shinyServer(function(input, output) {
     dat
   })
   
-  plotInput <- reactive({
+  output$plot <-renderPlot({
     dat <- dat %>% 
       filter(Site == input$site | Site == input$site2,
              Date >= input$date[1] & Date <= input$date[2]) %>% 
@@ -67,33 +65,9 @@ server <- shinyServer(function(input, output) {
       ggplot(dat, aes(x = Date, y = Measurement)) +
         geom_point() +
         facet_wrap(~ Variable + Site, ncol = 2, scales = "free_y") +
-      ylab("")
+        ylab("")
     }
   })
-  
-  output$table <- renderDataTable({
-    datInput()
-  })
-  
-  output$plot <-renderPlot({
-    plotInput()
-  })
-  
-  output$downloadData <- downloadHandler(
-    filename = function() {
-      paste("oyster-data", ".csv", sep="")
-    },
-    content = function(file) {
-      write.csv(datInput(), file)
-    })
-  
-  output$downloadPlot <- downloadHandler(
-    filename = function() {
-      paste("oyster-plot", ".png", sep="")
-    },
-    content = function(file) {
-      ggsave(file, plotInput(), device = "png")
-    })
 })
 
 # Run the application 
